@@ -1,0 +1,55 @@
+name: Build PrimeYard Workspace APK
+
+on:
+  workflow_dispatch:
+  push:
+    branches: ["main", "master"]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+
+      - name: Show repo files
+        run: |
+          pwd
+          ls -la
+          find . -maxdepth 2 -type f | sort
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Generate Android platform files with correct package
+        run: flutter create . --platforms=android --org com.primeyard
+
+      - name: Verify Android folder
+        run: |
+          ls -la
+          ls -la android
+          ls -la android/app
+
+      - name: Add Firebase Android config
+        run: cp "$GITHUB_WORKSPACE/google-services.json" "$GITHUB_WORKSPACE/android/app/google-services.json"
+
+      - name: Verify Firebase config copied
+        run: ls -la android/app
+
+      - name: Generate launcher icons
+        run: flutter pub run flutter_launcher_icons
+
+      - name: Build release APK
+        run: flutter build apk --release
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: primeyard-workspace-flutter-apk
+          path: build/app/outputs/flutter-apk/app-release.apk
